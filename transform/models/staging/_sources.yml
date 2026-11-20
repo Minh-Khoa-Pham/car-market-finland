@@ -1,0 +1,10 @@
+version: 2
+sources:
+  - name: raw
+    description: Loaded by ingest/fetch_registrations.py from Traficom's open statistics API.
+    tables:
+      - name: registrations
+        description: >
+          Monthly passenger car first registrations by region, brand and power source
+          (Traficom table 010_ensirek_tau_101). Contains both detail rows and the
+          source's own totals (codes YH, MA1, MUUT, MATK).

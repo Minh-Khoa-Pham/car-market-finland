@@ -1,0 +1,11 @@
+power_code,power_name_en,powertrain
+01,Petrol,Petrol
+02,Diesel,Diesel
+04,Electric,Battery electric
+05,Hydrogen,Other
+13,Natural gas (CNG),Other
+38,Petrol/CNG,Other
+39,Petrol/electric (plug-in hybrid),Plug-in hybrid
+40,Petrol/ethanol,Other
+44,Diesel/electric (plug-in hybrid),Plug-in hybrid
+48,Diesel/biodiesel,Diesel

@@ -1,0 +1,33 @@
+version: 2
+models:
+  - name: dim_brand
+    description: One row per brand, with its importer group (K-Auto or Other).
+    columns:
+      - name: brand_code
+        tests: [not_null, unique]
+      - name: importer_group
+        tests:
+          - accepted_values:
+              values: [K-Auto, Other]
+  - name: fct_registrations
+    description: Passenger car first registrations excluding motorhomes. Grain = month x region x brand x power source.
+    columns:
+      - name: brand_code
+        tests:
+          - relationships:
+              to: ref('dim_brand')
+              field: brand_code
+      - name: registrations
+        tests: [not_null]
+  - name: mart_brand_monthly
+    description: National market share and rank by brand and month.
+    columns:
+      - name: market_share
+        tests: [not_null]
+  - name: mart_k_auto_monthly
+    description: K-Auto brands' combined share and electric car share vs the market, by month.
+    columns:
+      - name: month_date
+        tests: [not_null, unique]
+  - name: mart_region_yearly
+    description: K-Auto share by region and year.

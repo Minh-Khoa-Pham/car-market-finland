@@ -1,0 +1,8 @@
+car_market:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      # Path is relative to the transform/ folder, where dbt is run from.
+      path: "{{ env_var('CAR_MARKET_DB', '../data/car_market.duckdb') }}"
+      threads: 4

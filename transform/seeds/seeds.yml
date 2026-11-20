@@ -1,0 +1,18 @@
+version: 2
+seeds:
+  - name: brand_groups
+    description: Brands imported by K-Auto (K Group's car trade), as listed by K Group.
+    columns:
+      - name: brand_name
+        tests: [not_null, unique]
+  - name: powertrains
+    description: Maps Traficom power source codes to English names and powertrain groups.
+    config:
+      column_types: {power_code: varchar}
+    columns:
+      - name: power_code
+        tests: [not_null, unique]
+      - name: powertrain
+        tests:
+          - accepted_values:
+              values: [Petrol, Diesel, Battery electric, Plug-in hybrid, Other]

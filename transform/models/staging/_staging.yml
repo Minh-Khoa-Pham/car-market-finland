@@ -1,0 +1,26 @@
+version: 2
+models:
+  - name: stg_registrations
+    description: Cleaned detail rows (no source totals). Grain = month x region x brand x power source.
+    columns:
+      - name: month_date
+        tests: [not_null]
+      - name: region_code
+        tests: [not_null]
+      - name: brand_code
+        tests: [not_null]
+      - name: power_code
+        tests:
+          - not_null
+          - relationships:
+              to: ref('powertrains')
+              field: power_code
+      - name: registrations
+        tests: [not_null]
+  - name: stg_reported_totals
+    description: Traficom's published monthly totals for mainland Finland.
+    columns:
+      - name: month_date
+        tests: [not_null, unique]
+      - name: reported_total
+        tests: [not_null]
