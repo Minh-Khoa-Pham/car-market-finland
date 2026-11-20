@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 6 5 * *"  # monthly, after Traficom publishes new figures
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Load the latest two years from Traficom
+        run: python ingest/fetch_registrations.py --years 2025 2026
+
+      - name: dbt build (models + data tests)
+        working-directory: transform
+        run: dbt build --profiles-dir .
