@@ -8,7 +8,7 @@ Finland, 2016 to today, with a focus on the brands imported by K-Auto
 
 ![Dashboard](docs/dashboard.png)
 
-**Sales dashboard (HTML):** [`docs/index.html`](docs/index.html) is a self-contained page for K-Auto sales: year-to-date scorecard vs competitors, brand share trends, powertrain mix and regional opportunity (how many more cars each region would sell at K-Auto's national share). Open it in any browser, or enable GitHub Pages (Settings → Pages → `main` / `docs`).
+**Live sales dashboard:** [minh-khoa-pham.github.io/car-market-finland](https://minh-khoa-pham.github.io/car-market-finland/) is a self-contained page
 
 ## Key findings
 
