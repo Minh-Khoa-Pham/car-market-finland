@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K-Auto Market Dashboard</title>
+<meta name="description" content="Finnish new car market: K-Auto brands vs the market, from Traficom open data.">
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --text:#1b2430; --muted:#5d6b7a; --line:#e3e7ec;
+  --k:#1f4e79; --k-soft:#e6eef6; --other:#a9b6c3; --market:#d9772f;
+  --pos:#1d7a46; --neg:#b3261e;
+  --bev:#1f4e79; --phev:#5b9bd5; --petrol:#d9a441; --diesel:#7f7f7f; --oth:#c9cfd6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f141a; --card:#171e26; --text:#e6ebf0; --muted:#9aa7b4; --line:#2a333d;
+    --k:#6fa8dc; --k-soft:#1d2b3a; --other:#5d6b7a; --market:#f0a060;
+    --pos:#5cc58a; --neg:#ff8a80;
+    --bev:#6fa8dc; --phev:#3d6f9e; --petrol:#d9a441; --diesel:#8d8d8d; --oth:#46505b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --card:#171e26; --text:#e6ebf0; --muted:#9aa7b4; --line:#2a333d;
+  --k:#6fa8dc; --k-soft:#1d2b3a; --other:#5d6b7a; --market:#f0a060;
+  --pos:#5cc58a; --neg:#ff8a80;
+  --bev:#6fa8dc; --phev:#3d6f9e; --petrol:#d9a441; --diesel:#8d8d8d; --oth:#46505b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
+header h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted)}
+.insights{margin:18px 0 8px;padding:14px 16px;background:var(--k-soft);border-left:4px solid var(--k);border-radius:8px}
+.insights ul{margin:0;padding-left:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi .label{color:var(--muted);font-size:13px}
+.kpi .value{font-size:28px;font-weight:650;margin-top:2px}
+.kpi .delta{font-size:13px;margin-top:2px}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 16px;margin-top:16px}
+section h2{font-size:18px;margin:0 0 2px}
+section .sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.chart{position:relative;height:320px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+th.sorted::after{content:" ↓"}
+th.sorted.asc::after{content:" ↑"}
+tr.k td{background:var(--k-soft)}
+tr.total td{font-weight:700}
+.badge{display:inline-block;font-size:11px;padding:1px 6px;border-radius:9px;background:var(--k);color:var(--card);margin-left:6px;vertical-align:1px}
+.bar{display:inline-block;height:8px;background:var(--k);border-radius:4px;vertical-align:middle}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:16px;padding:3px 10px;font-size:13px;cursor:pointer}
+.chip.on{background:var(--k);border-color:var(--k);color:var(--card)}
+footer{color:var(--muted);font-size:12.5px;margin-top:20px}
+footer p{margin:4px 0}
+.theme{float:right;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <button class="theme" id="theme" type="button">Toggle theme</button>
+    <h1>K-Auto Market Dashboard</h1>
+    <p id="subtitle"></p>
+  </header>
+
+  <div class="insights"><strong>Key takeaways</strong><ul id="insights"></ul></div>
+  <div class="kpis" id="kpis"></div>
+
+  <section>
+    <h2>K-Auto market share</h2>
+    <p class="sub">Share of new passenger car registrations, monthly and rolling 12 months.</p>
+    <div class="chart"><canvas id="shareChart"></canvas></div>
+  </section>
+
+  <section>
+    <h2>Year-to-date brand scorecard</h2>
+    <p class="sub" id="scoreSub"></p>
+    <div class="table-wrap"><table id="scorecard"></table></div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>Brand share over time</h2>
+      <p class="sub">Rolling 12-month market share. Click brands to compare.</p>
+      <div class="chips" id="chips"></div>
+      <div class="chart"><canvas id="brandChart"></canvas></div>
+    </section>
+    <section>
+      <h2>Powertrain mix: K-Auto vs market</h2>
+      <p class="sub">Share of registrations by powertrain and year.</p>
+      <div class="chart"><canvas id="mixChart"></canvas></div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Regional opportunity</h2>
+    <p class="sub" id="regionSub"></p>
+    <div class="table-wrap"><table id="regions"></table></div>
+  </section>
+
+  <footer>
+    <p><strong>Definitions.</strong> New passenger cars registered in mainland Finland, excluding motorhomes. K-Auto brands: Volkswagen, Audi, SEAT, CUPRA, Porsche, Bentley. Year-to-date compares the same months of the current and previous year.</p>
+    <p><strong>Data quality.</strong> All figures reconcile exactly to Traficom's published totals by brand, power source and region (tested with dbt on every build).</p>
+    <p>Source: Traficom open data, first registrations of passenger cars (CC BY 4.0). Independent portfolio project by Khoa Pham, not affiliated with Kesko or K-Auto. Code: github.com/Minh-Khoa-Pham/car-market-finland</p>
+  </footer>
+</div>
+
+<script>/*__CHARTJS__*/</script>
+<script>
+const D = __DATA__;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const pct = (x, d = 1) => (100 * x).toFixed(d) + '%';
+const pp = x => { const v = Math.abs(x) < 0.0005 ? 0 : x; return (v >= 0 ? '+' : '') + (100 * v).toFixed(1) + ' pp'; };
+const chg = x => (x >= 0 ? '+' : '') + (100 * x).toFixed(1) + '%';
+const cls = x => Math.abs(x) < 0.0005 ? '' : (x > 0 ? 'pos' : 'neg');
+const isK = b => D.kAutoBrands.includes(b);
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const ytdLabel = `January–${MONTHS[D.latest.month - 1]} ${D.latest.year}`;
+
+// ---------- derived numbers ----------
+const kYtd = D.ytd.filter(r => r.importer_group === 'K-Auto');
+const kNow = kYtd.reduce((s, r) => s + (r.ytd || 0), 0);
+const kPrev = kYtd.reduce((s, r) => s + (r.ytd_prev || 0), 0);
+const kShare = kNow / D.ytdMarket, kSharePrev = kPrev / D.ytdMarketPrev;
+const mixNow = D.mix.filter(r => r.year === D.latest.year);
+const bevK = (mixNow.find(r => r.powertrain === 'Battery electric') || {}).k / mixNow.reduce((s, r) => s + (r.k || 0), 0);
+const bevM = (mixNow.find(r => r.powertrain === 'Battery electric') || {}).market / mixNow.reduce((s, r) => s + r.market, 0);
+const regions = D.regions.map(r => {
+  const share = r.k / r.market, sharePrev = r.k_prev / r.market_prev;
+  return {...r, share, change: share - sharePrev, index: 100 * share / kShare,
+          potential: Math.max(0, Math.round(kShare * r.market - r.k))};
+}).sort((a, b) => b.potential - a.potential);
+const kBrandRows = kYtd.filter(r => r.ytd_prev > 50).map(r => ({...r, g: r.ytd / r.ytd_prev - 1})).sort((a, b) => b.g - a.g);
+
+// ---------- header, insights, KPIs ----------
+document.getElementById('subtitle').textContent =
+  `Finnish new car market, data up to ${D.latest.label}. Year to date = ${ytdLabel}.`;
+const top3 = regions.slice(0, 3);
+document.getElementById('insights').innerHTML = [
+  `K-Auto brands hold <b>${pct(kShare)}</b> of the market year to date (${pp(kShare - kSharePrev)} vs last year), with ${fmt(kNow)} registrations (${chg(kNow / kPrev - 1)}) while the market changed ${chg(D.ytdMarket / D.ytdMarketPrev - 1)}.`,
+  `Fastest-growing K-Auto brand: <b>${kBrandRows[0].brand_name}</b> (${chg(kBrandRows[0].g)}); weakest: <b>${kBrandRows[kBrandRows.length - 1].brand_name}</b> (${chg(kBrandRows[kBrandRows.length - 1].g)}).`,
+  `<b>${pct(bevK, 0)}</b> of K-Auto registrations are battery electric, vs ${pct(bevM, 0)} for the whole market.`,
+  `Biggest regional upside: <b>${top3.map(r => r.region_name).join(', ')}</b>, about ${fmt(top3.reduce((s, r) => s + r.potential, 0))} more cars year to date if they matched K-Auto's national share.`
+].map(t => `<li>${t}</li>`).join('');
+
+const kpi = (label, value, delta, c) =>
+  `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="delta ${c || ''}">${delta}</div></div>`;
+document.getElementById('kpis').innerHTML =
+  kpi('K-Auto registrations, YTD', fmt(kNow), `${chg(kNow / kPrev - 1)} vs last year`, cls(kNow - kPrev)) +
+  kpi('K-Auto market share, YTD', pct(kShare), `${pp(kShare - kSharePrev)} vs last year`, cls(kShare - kSharePrev)) +
+  kpi('Total market, YTD', fmt(D.ytdMarket), `${chg(D.ytdMarket / D.ytdMarketPrev - 1)} vs last year`, cls(D.ytdMarket - D.ytdMarketPrev)) +
+  kpi('Battery electric share, YTD', `${pct(bevK, 0)} <span style="font-size:15px;color:var(--muted)">vs ${pct(bevM, 0)} market</span>`, 'K-Auto vs whole market');
+
+// ---------- scorecard ----------
+let sortKey = 'ytd', sortAsc = false;
+function renderScorecard() {
+  const shown = D.ytd.filter(r => D.brands.includes(r.brand_name)).map(r => ({
+    brand: r.brand_name, k: r.importer_group === 'K-Auto', ytd: r.ytd || 0, prev: r.ytd_prev || 0,
+    growth: r.ytd_prev ? r.ytd / r.ytd_prev - 1 : null, share: r.share || 0, change: (r.share || 0) - (r.share_prev || 0)}));
+  shown.sort((a, b) => (sortAsc ? 1 : -1) * ((a[sortKey] ?? -1e9) - (b[sortKey] ?? -1e9)));
+  const cols = [['brand','Brand'],['ytd','Registrations'],['growth','vs last year'],['share','Market share'],['change','Share change']];
+  const head = '<tr>' + cols.map(([k, l]) => `<th data-k="${k}" class="${k === sortKey ? 'sorted' + (sortAsc ? ' asc' : '') : ''}">${l}</th>`).join('') + '</tr>';
+  const total = `<tr class="k total"><td>All K-Auto brands</td><td>${fmt(kNow)}</td><td class="${cls(kNow - kPrev)}">${chg(kNow / kPrev - 1)}</td><td>${pct(kShare)}</td><td class="${cls(kShare - kSharePrev)}">${pp(kShare - kSharePrev)}</td></tr>`;
+  const body = shown.map(r => `<tr class="${r.k ? 'k' : ''}"><td>${r.brand}${r.k ? '<span class="badge">K-Auto</span>' : ''}</td><td>${fmt(r.ytd)}</td>` +
+    `<td class="${r.growth == null ? '' : cls(r.growth)}">${r.growth == null ? '–' : chg(r.growth)}</td><td>${pct(r.share)}</td><td class="${cls(r.change)}">${pp(r.change)}</td></tr>`).join('');
+  const t = document.getElementById('scorecard');
+  t.innerHTML = `<thead>${head}</thead><tbody>${total}${body}</tbody>`;
+  t.querySelectorAll('th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k; if (k === 'brand') return;
+    sortAsc = sortKey === k ? !sortAsc : false; sortKey = k; renderScorecard();
+  });
+}
+document.getElementById('scoreSub').textContent =
+  `${ytdLabel} vs the same months last year. Top 15 brands plus all K-Auto brands. Click a column to sort.`;
+renderScorecard();
+
+// ---------- charts ----------
+const rolling = (num, den) => num.map((_, i) => {
+  if (i < 11) return null;
+  let a = 0, b = 0; for (let j = i - 11; j <= i; j++) { a += num[j]; b += den[j]; }
+  return b ? a / b : null;
+});
+const market = D.monthly.map(r => r.market), kSeries = D.monthly.map(r => r.k);
+const charts = [];
+function baseOptions(yPct = true) {
+  return {
+    responsive: true, maintainAspectRatio: false, interaction: {mode: 'index', intersect: false},
+    plugins: {legend: {labels: {color: css('--text'), boxWidth: 12}},
+              tooltip: {callbacks: yPct ? {label: c => `${c.dataset.label}: ${c.parsed.y == null ? '–' : pct(c.parsed.y)}`} : {}}},
+    scales: {x: {ticks: {color: css('--muted'), maxTicksLimit: 8}, grid: {display: false}},
+             y: {ticks: {color: css('--muted'), callback: v => yPct ? pct(v, 0) : v}, grid: {color: css('--line')}}}
+  };
+}
+function drawAll() {
+  charts.forEach(c => c.destroy()); charts.length = 0;
+  charts.push(new Chart(document.getElementById('shareChart'), {
+    type: 'line',
+    data: {labels: D.months, datasets: [
+      {label: 'Monthly', data: kSeries.map((k, i) => k / market[i]), borderColor: css('--other'), borderWidth: 1.2, pointRadius: 0},
+      {label: 'Rolling 12 months', data: rolling(kSeries, market), borderColor: css('--k'), borderWidth: 2.5, pointRadius: 0}]},
+    options: baseOptions()}));
+
+  const palette = [css('--k'), css('--market'), '#2e8b57', '#8e44ad', '#c0392b', '#16a085', '#d35400', '#7f8c8d'];
+  charts.push(new Chart(document.getElementById('brandChart'), {
+    type: 'line',
+    data: {labels: D.months, datasets: [...selected].map((b, i) => ({
+      label: b, data: rolling(D.brandSeries[b], market), borderColor: palette[i % palette.length],
+      borderWidth: isK(b) ? 2.5 : 1.6, borderDash: isK(b) ? [] : [5, 3], pointRadius: 0}))},
+    options: baseOptions()}));
+
+  const years = [...new Set(D.mix.map(r => r.year))];
+  const order = ['Battery electric', 'Plug-in hybrid', 'Petrol', 'Diesel', 'Other'];
+  const colors = {'Battery electric': css('--bev'), 'Plug-in hybrid': css('--phev'), 'Petrol': css('--petrol'), 'Diesel': css('--diesel'), 'Other': css('--oth')};
+  const shareOf = (who, y, p) => {
+    const rs = D.mix.filter(r => r.year === y), tot = rs.reduce((s, r) => s + (r[who] || 0), 0);
+    return ((rs.find(r => r.powertrain === p) || {})[who] || 0) / tot;
+  };
+  const ds = [];
+  order.forEach(p => ['k', 'market'].forEach(who => ds.push({
+    label: p, stack: who, data: years.map(y => shareOf(who, y, p)), backgroundColor: colors[p],
+    borderColor: css('--card'), borderWidth: who === 'k' ? 0 : 0, hidden: false,
+    _who: who})));
+  charts.push(new Chart(document.getElementById('mixChart'), {
+    type: 'bar',
+    data: {labels: years.map(y => y === D.latest.year ? `${y} YTD` : String(y)), datasets: ds},
+    options: {...baseOptions(), plugins: {
+      legend: {labels: {color: css('--text'), boxWidth: 12, filter: i => ds[i.datasetIndex]._who === 'k'}},
+      tooltip: {callbacks: {label: c => `${c.dataset._who === 'k' ? 'K-Auto' : 'Market'} · ${c.dataset.label}: ${pct(c.parsed.y)}`}},
+      subtitle: {display: true, text: 'Left bar = K-Auto, right bar = whole market', color: css('--muted')}},
+      scales: {x: {stacked: true, ticks: {color: css('--muted')}, grid: {display: false}},
+               y: {stacked: true, max: 1, ticks: {color: css('--muted'), callback: v => pct(v, 0)}, grid: {color: css('--line')}}}}}));
+}
+
+const selected = new Set([...D.kAutoBrands.filter(b => D.brands.includes(b)).slice(0, 3), D.brands[0], 'Skoda'].filter(b => D.brands.includes(b)));
+document.getElementById('chips').innerHTML = D.brands.map(b =>
+  `<button type="button" class="chip ${selected.has(b) ? 'on' : ''}" data-b="${b}">${b}</button>`).join('');
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+  const b = c.dataset.b;
+  if (selected.has(b)) { if (selected.size > 1) selected.delete(b); } else if (selected.size < 8) selected.add(b);
+  c.classList.toggle('on', selected.has(b)); drawAll();
+});
+
+// ---------- regions ----------
+document.getElementById('regionSub').textContent =
+  `${ytdLabel}. "Potential" = extra K-Auto registrations if the region matched K-Auto's national share (${pct(kShare)}). Index 100 = national share.`;
+const maxPot = Math.max(...regions.map(r => r.potential), 1);
+document.getElementById('regions').innerHTML =
+  '<thead><tr><th>Region</th><th>Market</th><th>K-Auto</th><th>K-Auto share</th><th>Change vs last year</th><th>Index</th><th>Potential (cars)</th></tr></thead><tbody>' +
+  regions.map(r => `<tr><td>${r.region_name}</td><td>${fmt(r.market)}</td><td>${fmt(r.k)}</td><td>${pct(r.share)}</td>` +
+    `<td class="${cls(r.change)}">${pp(r.change)}</td><td class="${r.index >= 100 ? 'pos' : 'neg'}">${Math.round(r.index)}</td>` +
+    `<td>${r.potential ? `<span class="bar" style="width:${Math.max(4, 70 * r.potential / maxPot)}px"></span> ${fmt(r.potential)}` : '–'}</td></tr>`).join('') +
+  '</tbody>';
+
+// ---------- theme ----------
+document.getElementById('theme').onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark'; drawAll();
+};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
+drawAll();
+</script>
+</body>
+</html>

@@ -8,6 +8,8 @@ Finland, 2016 to today, with a focus on the brands imported by K-Auto
 
 ![Dashboard](docs/dashboard.png)
 
+**Sales dashboard (HTML):** [`docs/index.html`](docs/index.html) is a self-contained page for K-Auto sales: year-to-date scorecard vs competitors, brand share trends, powertrain mix and regional opportunity (how many more cars each region would sell at K-Auto's national share). Open it in any browser, or enable GitHub Pages (Settings → Pages → `main` / `docs`).
+
 ## Key findings
 
 | | |
@@ -44,6 +46,7 @@ transform/ (dbt)
                 mart_k_auto_monthly, mart_region_yearly
   tests/        reconciliation, unique grain, shares sum to one   (27 tests in total)
 app/dashboard.py                Streamlit + Plotly dashboard
+app/export_html.py              builds docs/index.html (Chart.js, data embedded, works offline)
 .github/workflows/ci.yml        unit tests + live load + dbt build on every push and monthly
 ```
 
@@ -55,6 +58,7 @@ pip install -r requirements.txt
 python ingest/fetch_registrations.py          # about 2 minutes, all years
 cd transform && dbt build --profiles-dir . && cd ..
 streamlit run app/dashboard.py
+python app/export_html.py                     # optional: static HTML dashboard
 ```
 
 Run `pytest` for the unit tests.
@@ -69,3 +73,7 @@ Traficom's published totals, and the dbt tests keep it that way.
 Source: [Traficom](https://trafi2.stat.fi/PXWeb/pxweb/fi/TraFi/TraFi__Ensirekisteroinnit/),
 table `010_ensirek_tau_101`, licensed CC BY 4.0. Independent portfolio project, not
 affiliated with Kesko or K-Auto.
+
+## Licence
+
+Code: MIT (see LICENSE). Data: Traficom, CC BY 4.0.
